@@ -1,0 +1,956 @@
+{
+	"info": {
+		"_postman_id": "320553f9-d471-4936-b650-b7ade4ebed99",
+		"name": "Book API Store",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "42490060"
+	},
+	"item": [
+		{
+			"name": "Account",
+			"item": [
+				{
+					"name": "Authorize",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Body is correct\", function () {\r",
+									"    pm.response.to.have.body(\"true\");\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userName\": \"{{USERNAME}}\",\r\n  \"password\": \"{{PASSWORD}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL2}}/Authorized",
+							"host": [
+								"{{BASE_URL2}}"
+							],
+							"path": [
+								"Authorized"
+							]
+						},
+						"description": "StartFragment\n\nThis endpoint verifies whether the provided user credentials are valid and authorized.\n\n**Method:** `POST`\n\n**Response:** Boolean value indicating authorization status.\n\nEndFragment"
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"\r",
+									"var jsondata=pm.response.json();\r",
+									"pm.environment.set(\"TOKEN\", jsondata.token);\r",
+									"\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userName\": \"{{USERNAME}}\",\r\n  \"password\": \"{{PASSWORD}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL2}}/GenerateToken",
+							"host": [
+								"{{BASE_URL2}}"
+							],
+							"path": [
+								"GenerateToken"
+							]
+						},
+						"description": "StartFragment\n\n### **Generate Token**\n\nThis endpoint generates a JWT token for the user, which is required to authorize and access protected endpoints.\n\n**Method:** `POST`\n\n**Response:** Token, status, and result message.\n\nStore the token in environment as `token` for use in subsequent requests.\n\nEndFragment"
+					},
+					"response": [
+						{
+							"name": "Generate_Token",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"userName\": \"•••••••\",\r\n  \"password\": \"•••••••\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://demoqa.com/Account/v1/GenerateToken",
+									"protocol": "https",
+									"host": [
+										"demoqa",
+										"com"
+									],
+									"path": [
+										"Account",
+										"v1",
+										"GenerateToken"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.17.10 (Ubuntu)"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 11 Mar 2025 13:43:06 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "274"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"112-bBccDZ3tmFHYLVLdNO4/FASKfpA\""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyTmFtZSI6Ik11enppIiwicGFzc3dvcmQiOiJQYXNzd29yZEAxMjMiLCJpYXQiOjE3NDE3MDA1ODZ9.JnriG_UjdumwpPaIcd46ICy1JpNzkP31vmYWifmE1wE\",\n    \"expires\": \"2025-03-18T13:43:06.036Z\",\n    \"status\": \"Success\",\n    \"result\": \"User authorized successfully.\"\n}"
+						}
+					]
+				},
+				{
+					"name": "User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"\r",
+									"pm.test(\"Body is correct and Status code is 200 \", function () {\r",
+									"    var jsondata=pm.response.json();\r",
+									"\r",
+									"    pm.expect(jsondata.username).to.eql(\"Muzzi\");\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userName\": \"{{USERNAME}}\",\r\n  \"password\": \"{{PASSWORD}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL2}}/User/{{userID}}",
+							"host": [
+								"{{BASE_URL2}}"
+							],
+							"path": [
+								"User",
+								"{{userID}}"
+							],
+							"query": [
+								{
+									"key": "",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "StartFragment\n\n> \n\nRetrieves user details including the list of books assigned to that user.\n\n**Method:** `GET`  \n**Authorization:** Bearer Token (generated from **Generate Token** endpoint)  \n**Path Variable:**\n\n- `userId`: The user's unique identifier.  \n    **Response:** User profile with books data.\n    \n\n \n  \n\nEndFragment"
+					},
+					"response": [
+						{
+							"name": "UserDetails",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"userName\": \"•••••••\",\r\n  \"password\": \"•••••••\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://demoqa.com/Account/v1/User/•••••••",
+									"protocol": "https",
+									"host": [
+										"demoqa",
+										"com"
+									],
+									"path": [
+										"Account",
+										"v1",
+										"User",
+										"•••••••"
+									],
+									"query": [
+										{
+											"key": "",
+											"value": "",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.17.10 (Ubuntu)"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 11 Mar 2025 16:14:13 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "79"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"4f-8pWPPSW5KCxdVWQ1hbgppfbvj7w\""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"userId\": \"638171a5-d590-4554-a212-4f3aa9266ed0\",\n    \"username\": \"Muzzi\",\n    \"books\": []\n}"
+						}
+					]
+				}
+			],
+			"description": "Account collection for generating token,authorizing user and get user details requests.",
+			"auth": {
+				"type": "noauth"
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "BookStore",
+			"item": [
+				{
+					"name": "Books",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsondata=pm.response.json();\r",
+									"pm.environment.set(\"isbn1\", jsondata.books[0].isbn);\r",
+									"pm.environment.set(\"isbn2\", jsondata.books[1].isbn);\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{BASE_URL1}}/v1/Books",
+							"host": [
+								"{{BASE_URL1}}"
+							],
+							"path": [
+								"v1",
+								"Books"
+							]
+						},
+						"description": "StartFragment\n\nFetches a list of all available books in the Bookstore.\n\n**Method:** `GET`  \n**Authorization:** Optional for public data but add Bearer Token if required.  \n**Response:** Array of book objects with details like title, author, ISBN, publisher, etc.  \n  \n**NB :** Use a test script to capture an `isbn` dynamically for further testing.\n\nEndFragment"
+					},
+					"response": []
+				},
+				{
+					"name": "Add book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Add new book request\", function () {\r",
+									"    pm.expect(pm.response.code).to.be.oneOf([201, 202]);\r",
+									"    pm.response.to.have.body(\"isbn\");\r",
+									"  \r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userId\": \"{{userID}}\",\r\n  \"collectionOfIsbns\": [\r\n   \r\n\r\n     {\r\n      \"isbn\": \"{{isbn2}}\"\r\n    \r\n    }\r\n  ]\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL1}}/v1/Books",
+							"host": [
+								"{{BASE_URL1}}"
+							],
+							"path": [
+								"v1",
+								"Books"
+							]
+						},
+						"description": "StartFragment\n\nAdds a book to a user's personal collection. Requires user authorization.\n\n**Method:** `POST`  \n**Headers:** Authorization Bearer Token  \n**Body (JSON)**\n\nStartFragment**Response:** Confirms the list of added books.  \n  \nEnsure the `isbn` is fetched from available books list using a prior call to **Get Books**.EndFragment  \n  \n\nEndFragment"
+					},
+					"response": [
+						{
+							"name": "Invalid Json syntax",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"userId\": •••••••,\r\n  \"collectionOfIsbns\": [\r\n    {\r\n      \"isbn\": \r\n    \r\n    },\r\n    {\r\n         \"isbn\": \r\n    }\r\n  ]\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://demoqa.com/BookStore/v1/Books",
+									"protocol": "https",
+									"host": [
+										"demoqa",
+										"com"
+									],
+									"path": [
+										"BookStore",
+										"v1",
+										"Books"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "html",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.17.10 (Ubuntu)"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 11 Mar 2025 16:56:40 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "text/html; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "941"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "Content-Security-Policy",
+									"value": "default-src 'none'"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								}
+							],
+							"cookie": [],
+							"body": "<!DOCTYPE html>\n<html lang=\"en\">\n    <head>\n        <meta charset=\"utf-8\">\n        <title>Error</title>\n    </head>\n    <body>\n        <pre>SyntaxError: Unexpected token a in JSON at position 21\n            <br> &nbsp; &nbsp;at JSON.parse (&lt;anonymous&gt;)\n            <br> &nbsp; &nbsp;at parse (/usr/projects/demosite/node_modules/body-parser/lib/types/json.js:89:19)\n            <br> &nbsp; &nbsp;at /usr/projects/demosite/node_modules/body-parser/lib/read.js:121:18\n            <br> &nbsp; &nbsp;at invokeCallback (/usr/projects/demosite/node_modules/raw-body/index.js:224:16)\n            <br> &nbsp; &nbsp;at done (/usr/projects/demosite/node_modules/raw-body/index.js:213:7)\n            <br> &nbsp; &nbsp;at IncomingMessage.onEnd (/usr/projects/demosite/node_modules/raw-body/index.js:273:7)\n            <br> &nbsp; &nbsp;at IncomingMessage.emit (node:events:517:28)\n            <br> &nbsp; &nbsp;at endReadableNT (node:internal/streams/readable:1400:12)\n            <br> &nbsp; &nbsp;at process.processTicksAndRejections (node:internal/process/task_queues:82:21)\n        </pre>\n    </body>\n</html>"
+						},
+						{
+							"name": "Valid Json syntax",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"userId\": \"{{userID}}\",\r\n  \"collectionOfIsbns\": [\r\n    {\r\n      \"isbn\": \"{{isbn1}}\"\r\n\r\n    },\r\n\r\n     {\r\n      \"isbn\": \"{{isbn2}}\"\r\n    \r\n    }\r\n  ]\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{BASE_URL1}}/v1/Books",
+									"host": [
+										"{{BASE_URL1}}"
+									],
+									"path": [
+										"v1",
+										"Books"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.17.10 (Ubuntu)"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 11 Mar 2025 17:00:57 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "61"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"3d-gB7h53TsZSbWLsAq5S31Gxdt66A\""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"books\": [\n        {\n            \"isbn\": \"9781449325862\"\n        },\n        {\n            \"isbn\": \"9781449331818\"\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BASE_URL1}}/v1/Book?ISBN=9781449325862",
+							"host": [
+								"{{BASE_URL1}}"
+							],
+							"path": [
+								"v1",
+								"Book"
+							],
+							"query": [
+								{
+									"key": "ISBN",
+									"value": "9781449325862"
+								}
+							]
+						},
+						"description": "StartFragment\n\nRetrieves details of a specific book by providing its ISBN number.\n\n**Method:** `GET`  \n**Query Parameter:**\n\n- `ISBN`: The unique identifier of the book.  \n    **Authorization:** Bearer Token (Optional)  \n    **Response:** Detailed information about the requested book.\n    \n\nEndFragment"
+					},
+					"response": [
+						{
+							"name": "Valid ISBN",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://demoqa.com/BookStore/v1/Book?ISBN=9781449325862",
+									"protocol": "https",
+									"host": [
+										"demoqa",
+										"com"
+									],
+									"path": [
+										"BookStore",
+										"v1",
+										"Book"
+									],
+									"query": [
+										{
+											"key": "ISBN",
+											"value": "9781449325862"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.17.10 (Ubuntu)"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 11 Mar 2025 17:05:39 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "549"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"225-6wegpsdSbs3Zjpo/5fzJQey1dRQ\""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"isbn\": \"9781449325862\",\n    \"title\": \"Git Pocket Guide\",\n    \"subTitle\": \"A Working Introduction\",\n    \"author\": \"Richard E. Silverman\",\n    \"publish_date\": \"2020-06-04T08:48:39.000Z\",\n    \"publisher\": \"O'Reilly Media\",\n    \"pages\": 234,\n    \"description\": \"This pocket guide is the perfect on-the-job companion to Git, the distributed version control system. It provides a compact, readable introduction to Git for new users, as well as a reference to common commands and procedures for those of you with Git exp\",\n    \"website\": \"http://chimera.labs.oreilly.com/books/1230000000561/index.html\"\n}"
+						},
+						{
+							"name": "Invalid ISBN",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{BASE_URL1}}/v1/Book?ISBN=978144932586444",
+									"host": [
+										"{{BASE_URL1}}"
+									],
+									"path": [
+										"v1",
+										"Book"
+									],
+									"query": [
+										{
+											"key": "ISBN",
+											"value": "978144932586444"
+										}
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.17.10 (Ubuntu)"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 11 Mar 2025 17:08:03 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "79"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"4f-RpKuEeQ3Bj2uvDIxIXvc7QRyqm4\""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": \"1205\",\n    \"message\": \"ISBN supplied is not available in Books Collection!\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Delete Book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"\r",
+									"pm.test(\"No content \", function () {\r",
+									"    pm.expect(pm.response.text()).to.empty;\r",
+									"        pm.response.to.have.status(204);\r",
+									"   \r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{TOKEN}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"isbn\": \"{{isbn2}}\",\r\n  \"userId\": \"{{userID}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BASE_URL1}}/v1/Book",
+							"host": [
+								"{{BASE_URL1}}"
+							],
+							"path": [
+								"v1",
+								"Book"
+							]
+						},
+						"description": "StartFragment\n\nRemoves a specific book from the user's collection.\n\n**Method:** `DELETE`  \n**Headers:** Authorization Bearer Token\n\n**Response:** Success message upon successful deletion.  \n  \n⚙️ Use this after adding books to test cleanup or to reset user data.\n\nEndFragment"
+					},
+					"response": [
+						{
+							"name": "Delete Book",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"isbn\": \"\",\r\n  \"userId\": \"•••••••\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://demoqa.com/BookStore/v1/Book",
+									"protocol": "https",
+									"host": [
+										"demoqa",
+										"com"
+									],
+									"path": [
+										"BookStore",
+										"v1",
+										"Book"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "plain",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.17.10 (Ubuntu)"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 11 Mar 2025 17:18:03 GMT"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"76-n8JCp6MlxeoB06W0cw+g3WtF8+U\""
+								}
+							],
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "Delete same isbn",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"isbn\": \"{{isbn2}}\",\r\n  \"userId\": \"{{userID}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{BASE_URL1}}/v1/Book",
+									"host": [
+										"{{BASE_URL1}}"
+									],
+									"path": [
+										"v1",
+										"Book"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Server",
+									"value": "nginx/1.17.10 (Ubuntu)"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 11 Mar 2025 17:18:50 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Content-Length",
+									"value": "80"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "X-Powered-By",
+									"value": "Express"
+								},
+								{
+									"key": "ETag",
+									"value": "W/\"50-zVNoQrFFG7jCwa1ApMkhwufXoo0\""
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": \"1206\",\n    \"message\": \"ISBN supplied is not available in User's Collection!\"\n}"
+						}
+					]
+				}
+			],
+			"description": "BookStore collection for getting list of books,adding booksmget a book and deleting a book requests",
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{TOKEN}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{TOKEN}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
