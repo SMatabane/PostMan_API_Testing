@@ -1,4 +1,5 @@
 ✅ This Postman collection contains a set of API requests to interact with the DemoQA Bookstore application.
+Link to documentation https://documenter.getpostman.com/view/42490060/2sAYk8uNt7
 
 Main Features:
 User authentication and token generation.
