@@ -1,6 +1,9 @@
 ✅ This Postman collection contains a set of API requests to interact with the DemoQA Bookstore application.
 Link to documentation https://documenter.getpostman.com/view/42490060/2sAYk8uNt7
 
+
+
+
 Main Features:
 User authentication and token generation.
 Retrieving book catalog and book details.
@@ -117,3 +120,11 @@ Edit
 }
 Response: Success message upon successful deletion.
 ⚙️ Use this after adding books to test cleanup or to reset user data.
+
+
+
+
+✅ Application 2:This Postman collection contains a set of API requests to interact with the Favquotes  application  (https://favqs.com/api).
+Link to documentation https://documenter.getpostman.com/view/42490060/2sAYkHpykV
+
+📌 Ensure you set your tokens for requests that requaire user token
