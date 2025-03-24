@@ -48,7 +48,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Token token={{token}}",
+								"value": "Token token=null",
 								"type": "text"
 							},
 							{
@@ -65,7 +65,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{ \r\n  \"user\": {\r\n    \"login\": \"{{login}}\",\r\n    \"email\": \"{{email}}\",\r\n    \"password\": \"{{password}}\"\r\n  }\r\n}",
+							"raw": "{ \r\n  \"user\": {\r\n    \"login\": \"{{login}}\",\r\n    \"email\": \"null\",\r\n    \"password\": \"null\"\r\n  }\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -109,7 +109,7 @@
 						"header": [
 							{
 								"key": "User-Token",
-								"value": "{{user-token}}",
+								"value": "",
 								"type": "text"
 							}
 						],
@@ -174,7 +174,7 @@
 							},
 							{
 								"key": "User-Token",
-								"value": "{{user-token}}",
+								"value": "",
 								"type": "text"
 							}
 						],
@@ -393,7 +393,7 @@
 						"header": [
 							{
 								"key": "User-Token",
-								"value": "{{user-token}}",
+								"value": "",
 								"type": "text"
 							}
 						],
@@ -503,7 +503,7 @@
 								"header": [
 									{
 										"key": "User-Token",
-										"value": "{{user-token}}",
+										"value": "",
 										"type": "text"
 									}
 								],
@@ -611,7 +611,7 @@
 						"header": [
 							{
 								"key": "User-Token",
-								"value": "{{user-token}}",
+								"value": "",
 								"type": "text",
 								"disabled": true
 							}
@@ -721,7 +721,7 @@
 								"header": [
 									{
 										"key": "User-Token",
-										"value": "{{user-token}}",
+										"value": "",
 										"type": "text",
 										"disabled": true
 									}
@@ -830,7 +830,7 @@
 						"header": [
 							{
 								"key": "User-Token",
-								"value": "{{user-token}}",
+								"value": "",
 								"type": "text"
 							}
 						],
@@ -939,7 +939,7 @@
 								"header": [
 									{
 										"key": "User-Token",
-										"value": "{{user-token}}",
+										"value": "",
 										"type": "text",
 										"disabled": true
 									}
@@ -1024,7 +1024,7 @@
 						"header": [
 							{
 								"key": "User-Token",
-								"value": "{{user-token}}",
+								"value": "",
 								"type": "text"
 							}
 						],
@@ -1055,7 +1055,7 @@
 		"bearer": [
 			{
 				"key": "token",
-				"value": "{{token}}",
+				"value": "",
 				"type": "string"
 			}
 		]
