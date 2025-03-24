@@ -1,0 +1,1085 @@
+{
+	"info": {
+		"_postman_id": "521066d7-df7e-4d62-b29d-0828bfd97e5b",
+		"name": "FavQs APis",
+		"description": "# About this collection\n\nThis collection guides you through the process of setting up an integration test to ensure that all individual components of an API function together seamlessly.\n\nThe API under test in this collection includes endpoints for user management and quotes management:\n\n- POST `/api/users`\n    \n- POST `/api/quotes`\n    \n- GET /api/quotes/id\n    \n\nBy setting up requests in the order of the operation, we can test the flow of data to and from the endpoints and ensure they work together as expected. We also verify that the data persists between requests on the back end.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "42490060"
+	},
+	"item": [
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "create user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();\r",
+									"\r",
+									"// Check if 'User-Token' exists inside 'user' object\r",
+									"if (jsonData.user && jsonData.user.hasOwnProperty(\"User-Token\")) {\r",
+									"    pm.test(\"User created successfully\", function () {\r",
+									"        pm.expect(jsonData.user).to.have.property(\"User-Token\");\r",
+									"    });\r",
+									"    // Set user-token in environment\r",
+									"    pm.environment.set(\"user-token\", jsonData.user[\"User-Token\"]);\r",
+									"    \r",
+									"} else if (jsonData.error_code === 31 || jsonData.error_code === 32) {\r",
+									"    pm.test(\"Status is error with message\", function () {\r",
+									"        pm.expect(jsonData.message).to.eql(\"User session present.\");\r",
+									"    });\r",
+									"} else if (jsonData.error_code === 32) {\r",
+									"    pm.test(\"Status is error with correct error_code\", function () {\r",
+									"        pm.expect(jsonData.message).to.eql(\"Email is not a valid email; Password is too short (minimum is 5 characters)\");\r",
+									"    });\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Token token={{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "",
+								"value": "",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \r\n  \"user\": {\r\n    \"login\": \"{{login}}\",\r\n    \"email\": \"{{email}}\",\r\n    \"password\": \"{{password}}\"\r\n  }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BaseUri}}/users",
+							"host": [
+								"{{BaseUri}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get_User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();\r",
+									"\r",
+									" pm.test(\"User details displayed\", function () {\r",
+									"        pm.expect(jsonData).to.have.property(\"account_details\");\r",
+									"    });\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "User-Token",
+								"value": "{{user-token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{BaseUri}}/users/?login=memi_22",
+							"host": [
+								"{{BaseUri}}"
+							],
+							"path": [
+								"users",
+								""
+							],
+							"query": [
+								{
+									"key": "login",
+									"value": "memi_22"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UpdateUser",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();\r",
+									"\r",
+									"\r",
+									"// Check if 'User-Token' exists inside 'user' object\r",
+									"if (jsonData.hasOwnProperty(\"message\")) {\r",
+									"   pm.test(\"Updated user successfully\", function () {\r",
+									"        pm.expect(jsonData.message).to.eql(\"User successfully updated.\");\r",
+									"    });\r",
+									"    \r",
+									"}else if (jsonData.error_code === 32) {\r",
+									"  pm.test(\"Message should contain 'login' and 'email' errors\", function () {\r",
+									"    pm.expect(jsonData.message).to.have.property(\"login\");\r",
+									"    pm.expect(jsonData.message).to.have.property(\"email\");\r",
+									"});\r",
+									"\r",
+									"\r",
+									"}\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Token",
+								"value": "{{user-token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \r\n  \"user\": {\r\n    \"facebook_username\": \"facebook_username_here\",\r\n    \"pic\": \"twitter\",\r\n    \"profanity_filter\": false\r\n  }\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{BaseUri}}/users/memi_22",
+							"host": [
+								"{{BaseUri}}"
+							],
+							"path": [
+								"users",
+								"memi_22"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "User Management requests"
+		},
+		{
+			"name": "Quotes",
+			"item": [
+				{
+					"name": "Get_Quote",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();\r",
+									"\r",
+									"    pm.test(\"Quote displayed\", function () {\r",
+									"        pm.expect(jsonData.quote).to.have.property(\"id\");\r",
+									"    \r",
+									"\r",
+									"    });"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{BaseUri}}/qotd",
+							"host": [
+								"{{BaseUri}}"
+							],
+							"path": [
+								"qotd"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "quotes displayed",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://favqs.com/api/qotd",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"qotd"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "335"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"a0bdfc81efcb82e25a34af6f8ee9e260\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "e0fe97a4-854f-4ccf-a2bc-b1aae6c52ca4"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.021966"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 24 Mar 2025 12:04:16 GMT"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"qotd_date\": \"2025-03-25T00:00:00.000+00:00\",\n    \"quote\": {\n        \"id\": 63987,\n        \"dialogue\": false,\n        \"private\": false,\n        \"tags\": [],\n        \"url\": \"https://favqs.com/quotes/stephen-king/63987-get-busy-livi-\",\n        \"favorites_count\": 2,\n        \"upvotes_count\": 0,\n        \"downvotes_count\": 0,\n        \"author\": \"Stephen King\",\n        \"author_permalink\": \"stephen-king\",\n        \"body\": \"Get busy living or get busy dying\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get list of quotes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the response as JSON\r",
+									"let jsonData = pm.response.json();\r",
+									"\r",
+									"//  Test: Check if 'quotes' exists and is an array\r",
+									"pm.test(\"'quotes' should be an array\", function () {\r",
+									"    pm.expect(jsonData).to.have.property(\"quotes\").that.is.an(\"array\");\r",
+									"});\r",
+									"\r",
+									"// Test: Ensure 'quotes' array is not empty\r",
+									"pm.test(\"'quotes' array should have at least one quote\", function () {\r",
+									"    pm.expect(jsonData.quotes.length).to.be.greaterThan(0);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{QsUri}}",
+							"host": [
+								"{{QsUri}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fav Quote",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" \r",
+									" let jsonData = pm.response.json();\r",
+									"\r",
+									"\r",
+									"if (! jsonData.error_code !== 20 ) {\r",
+									"     pm.test(\"Qoute added successfully\", function () {\r",
+									"        pm.expect(jsonData.id).to.eql(5);\r",
+									"    });\r",
+									"   \r",
+									"}else{\r",
+									"     pm.test(\"Status is error with message\", function () {\r",
+									"        pm.expect(jsonData.message).to.eql(\"No user session found.\");\r",
+									"    });\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "User-Token",
+								"value": "{{user-token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{QsUri}}/5/fav",
+							"host": [
+								"{{QsUri}}"
+							],
+							"path": [
+								"5",
+								"fav"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Error request",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "User-Token",
+										"value": "",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "https://favqs.com/api/quotes/4/fav",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"quotes",
+										"4",
+										"fav"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "55"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"f711ed66b0cad5fbdcb1e5fa0e7dada1\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "9c3039d9-4093-431c-9f7c-2aa15ab46441"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.004973"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 24 Mar 2025 11:36:02 GMT"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"error_code\": 20,\n    \"message\": \"No user session found.\"\n}"
+						},
+						{
+							"name": "Fav Quote",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "User-Token",
+										"value": "{{user-token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{QsUri}}/5/fav",
+									"host": [
+										"{{QsUri}}"
+									],
+									"path": [
+										"5",
+										"fav"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "398"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"a7b730fad6e3c240ccc52cbf47645c39\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "aec615ff-c216-425d-9105-125946cb65bc"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.028055"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 24 Mar 2025 11:49:51 GMT"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 5,\n    \"dialogue\": false,\n    \"private\": false,\n    \"tags\": [\n        \"opportunity\",\n        \"physicist\",\n        \"difficulty\"\n    ],\n    \"url\": \"https://favqs.com/quotes/anonymous/5-in-the-middle-of--\",\n    \"favorites_count\": 25,\n    \"upvotes_count\": 2,\n    \"downvotes_count\": 0,\n    \"author\": \"Anonymous\",\n    \"author_permalink\": \"anonymous\",\n    \"body\": \"In the middle of difficulty lies opportunity.\",\n    \"user_details\": {\n        \"favorite\": true,\n        \"upvote\": false,\n        \"downvote\": false,\n        \"hidden\": true\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Hide quote",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();\r",
+									"\r",
+									"\r",
+									"if ( jsonData.error_code !== 20 ) {\r",
+									"     pm.test(\"Qoute hidden successfully\", function () {\r",
+									"        pm.expect(jsonData.user_details.hidden).to.eql(true);\r",
+									"    });\r",
+									"   \r",
+									"}else{\r",
+									"     pm.test(\"Status is error with message\", function () {\r",
+									"        pm.expect(jsonData.message).to.eql(\"No user session found.\");\r",
+									"    });\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "User-Token",
+								"value": "{{user-token}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{QsUri}}/5/hide",
+							"host": [
+								"{{QsUri}}"
+							],
+							"path": [
+								"5",
+								"hide"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Hide quote",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "User-Token",
+										"value": "",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://favqs.com/api/quotes/5/hide",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"quotes",
+										"5",
+										"hide"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "398"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"a7b730fad6e3c240ccc52cbf47645c39\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "54d50b94-f44d-4974-a523-5e59738343bf"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.041826"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 24 Mar 2025 11:50:11 GMT"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 5,\n    \"dialogue\": false,\n    \"private\": false,\n    \"tags\": [\n        \"opportunity\",\n        \"physicist\",\n        \"difficulty\"\n    ],\n    \"url\": \"https://favqs.com/quotes/anonymous/5-in-the-middle-of--\",\n    \"favorites_count\": 25,\n    \"upvotes_count\": 2,\n    \"downvotes_count\": 0,\n    \"author\": \"Anonymous\",\n    \"author_permalink\": \"anonymous\",\n    \"body\": \"In the middle of difficulty lies opportunity.\",\n    \"user_details\": {\n        \"favorite\": true,\n        \"upvote\": false,\n        \"downvote\": false,\n        \"hidden\": true\n    }\n}"
+						},
+						{
+							"name": "Hide quote error",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "User-Token",
+										"value": "{{user-token}}",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "{{QsUri}}/5/hide",
+									"host": [
+										"{{QsUri}}"
+									],
+									"path": [
+										"5",
+										"hide"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "55"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"f711ed66b0cad5fbdcb1e5fa0e7dada1\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "cc1120c0-3d90-4d29-934b-069e53dbcc0c"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.005108"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 24 Mar 2025 11:51:35 GMT"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"error_code\": 20,\n    \"message\": \"No user session found.\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Unhide Quote",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();\r",
+									"\r",
+									"\r",
+									"if ( jsonData.error_code !== 20 ) {\r",
+									"     pm.test(\"Qoute unhidden successfully\", function () {\r",
+									"        pm.expect(jsonData.user_details.hidden).to.eql(false);\r",
+									"    });\r",
+									"   \r",
+									"}else{\r",
+									"     pm.test(\"Status is error with message\", function () {\r",
+									"        pm.expect(jsonData.message).to.eql(\"No user session found.\");\r",
+									"    });\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "User-Token",
+								"value": "{{user-token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{QsUri}}/5/unhide",
+							"host": [
+								"{{QsUri}}"
+							],
+							"path": [
+								"5",
+								"unhide"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Unhide quote success",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "User-Token",
+										"value": "",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://favqs.com/api/quotes/5/unhide",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"quotes",
+										"5",
+										"unhide"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "399"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"06b3b642e9e3c6af90884527b3d71ec5\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "029e148d-d103-40b9-b75c-f1ee2d05a347"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.033090"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 24 Mar 2025 11:58:48 GMT"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 5,\n    \"dialogue\": false,\n    \"private\": false,\n    \"tags\": [\n        \"opportunity\",\n        \"physicist\",\n        \"difficulty\"\n    ],\n    \"url\": \"https://favqs.com/quotes/anonymous/5-in-the-middle-of--\",\n    \"favorites_count\": 25,\n    \"upvotes_count\": 2,\n    \"downvotes_count\": 0,\n    \"author\": \"Anonymous\",\n    \"author_permalink\": \"anonymous\",\n    \"body\": \"In the middle of difficulty lies opportunity.\",\n    \"user_details\": {\n        \"favorite\": true,\n        \"upvote\": false,\n        \"downvote\": false,\n        \"hidden\": false\n    }\n}"
+						},
+						{
+							"name": "Unhide quote error",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "User-Token",
+										"value": "{{user-token}}",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "{{QsUri}}/5/unhide",
+									"host": [
+										"{{QsUri}}"
+									],
+									"path": [
+										"5",
+										"unhide"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "55"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"f711ed66b0cad5fbdcb1e5fa0e7dada1\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "6ca8e36a-ccc8-4e21-badb-889210563970"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.004922"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 24 Mar 2025 11:59:56 GMT"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"error_code\": 20,\n    \"message\": \"No user session found.\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Add quote",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "User-Token",
+								"value": "{{user-token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"quote\": {\r\n    \"author\": \"Mark Twain\",\r\n    \"body\": \"Never let your schooling interfere with your education.\"\r\n  }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{QsUri}}",
+							"host": [
+								"{{QsUri}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Quotes Management"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
