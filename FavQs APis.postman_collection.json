@@ -2,16 +2,16 @@
 	"info": {
 		"_postman_id": "521066d7-df7e-4d62-b29d-0828bfd97e5b",
 		"name": "FavQs APis",
-		"description": "# About this collection\n\nThis collection guides you through the process of setting up an integration test to ensure that all individual components of an API function together seamlessly.\n\nThe API under test in this collection includes endpoints for user management and quotes management:\n\n- POST `/api/users`\n    \n- POST `/api/quotes`\n    \n- GET /api/quotes/id\n    \n\nBy setting up requests in the order of the operation, we can test the flow of data to and from the endpoints and ensure they work together as expected. We also verify that the data persists between requests on the back end.",
+		"description": "# About this collection\n\nThis collection is built for testing the **FavQs Quotes API**, which allows searching, retrieving, and interacting with quotes.\n\n#### 🔑 Key Features:\n\n- **Authentication**:\n    \n    - API Key: `Authorization: Token token=\"YOUR_API_KEY\"`\n        \n    - User login generates a `User-Token` (saved in collection variables).\n        \n- **Endpoints Covered**:\n    \n    - Get Quote of the Day\n        \n    - Search quotes by keyword, author, or tag\n        \n    - Manage favorites (`favorite = true/false`)\n        \n    - Create or manage quotes (where allowed)\n        \n\n#### 🧪 Testing in Postman:\n\n- Validate **status codes** (200, 401, etc.)\n    \n- Assert **response body is not empty**\n    \n- Schema validation for quotes\n    \n- Check arrays (`length > 0`)\n    \n- Save and reuse tokens in **collection variables**\n    \n\n#### 🚀 How to Use in Postman:\n\n1. Set `base_url`, `api_key`, and `user_token` in **collection variables**.\n    \n2. Run individual requests or folders.\n    \n3. Use **Tests tab** for assertions like schema validation, response checks, and saving tokens.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "42490060"
 	},
 	"item": [
 		{
-			"name": "User",
+			"name": "Users",
 			"item": [
 				{
-					"name": "create user",
+					"name": "CreateUser",
 					"event": [
 						{
 							"listen": "test",
@@ -19,23 +19,28 @@
 								"exec": [
 									"let jsonData = pm.response.json();\r",
 									"\r",
-									"// Check if 'User-Token' exists inside 'user' object\r",
-									"if (jsonData.user && jsonData.user.hasOwnProperty(\"User-Token\")) {\r",
-									"    pm.test(\"User created successfully\", function () {\r",
-									"        pm.expect(jsonData.user).to.have.property(\"User-Token\");\r",
-									"    });\r",
-									"    // Set user-token in environment\r",
-									"    pm.environment.set(\"user-token\", jsonData.user[\"User-Token\"]);\r",
-									"    \r",
-									"} else if (jsonData.error_code === 31 || jsonData.error_code === 32) {\r",
-									"    pm.test(\"Status is error with message\", function () {\r",
-									"        pm.expect(jsonData.message).to.eql(\"User session present.\");\r",
-									"    });\r",
-									"} else if (jsonData.error_code === 32) {\r",
-									"    pm.test(\"Status is error with correct error_code\", function () {\r",
-									"        pm.expect(jsonData.message).to.eql(\"Email is not a valid email; Password is too short (minimum is 5 characters)\");\r",
-									"    });\r",
+									"// Extract token from response body\r",
+									"let token = jsonDat[\"User-Token\"];\r",
+									"let name=pm.collectionVariables.get(\"login\");\r",
+									"\r",
+									"// Save it in a collection variable\r",
+									"if (token) {\r",
+									"    pm.collectionVariables.set(\"userToken\", token);\r",
+									"\r",
+									"    console.log(\"Token saved in collection variable:\", token);\r",
+									"} else {\r",
+									"    console.log(\"No token found in response.\");\r",
 									"}\r",
+									"\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"});\r",
+									"// Check login has field\r",
+									"pm.test(\"Status field is 'success'\", function () {\r",
+									"    pm.expect(jsonData.login).to.eql(name);\r",
+									"});\r",
 									""
 								],
 								"type": "text/javascript",
@@ -44,28 +49,25 @@
 						}
 					],
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "POST",
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Token token=null",
+								"value": "{{mainToken}}",
 								"type": "text"
 							},
 							{
 								"key": "Content-Type",
 								"value": "application/json",
 								"type": "text"
-							},
-							{
-								"key": "",
-								"value": "",
-								"type": "text",
-								"disabled": true
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{ \r\n  \"user\": {\r\n    \"login\": \"{{login}}\",\r\n    \"email\": \"null\",\r\n    \"password\": \"null\"\r\n  }\r\n}",
+							"raw": "{ \r\n  \"user\": {\r\n    \"login\": \"{{login}}\",\r\n    \"email\": \"{{email}}\",\r\n    \"password\": \"{{password}}\"\r\n  }\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -73,9 +75,9 @@
 							}
 						},
 						"url": {
-							"raw": "{{BaseUri}}/users",
+							"raw": "{{uri}}/users",
 							"host": [
-								"{{BaseUri}}"
+								"{{uri}}"
 							],
 							"path": [
 								"users"
@@ -85,19 +87,21 @@
 					"response": []
 				},
 				{
-					"name": "Get_User",
+					"name": "getUser",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"let jsonData = pm.response.json();\r",
+									"// Check status field\r",
+									"pm.test(\"validate message is diplayed\", function () {\r",
+									"    pm.expect(pm.response.json().login).to.eql(\"37636\");\r",
+									"});\r",
 									"\r",
-									" pm.test(\"User details displayed\", function () {\r",
-									"        pm.expect(jsonData).to.have.property(\"account_details\");\r",
-									"    });\r",
-									"\r",
-									""
+									"//validate status code.\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
 								],
 								"type": "text/javascript",
 								"packages": {}
@@ -108,29 +112,135 @@
 						"method": "GET",
 						"header": [
 							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							},
+							{
 								"key": "User-Token",
-								"value": "",
+								"value": "{{usersession}}",
 								"type": "text"
 							}
 						],
 						"url": {
-							"raw": "{{BaseUri}}/users/?login=memi_22",
+							"raw": "{{uri}}/users",
 							"host": [
-								"{{BaseUri}}"
+								"{{uri}}"
 							],
 							"path": [
-								"users",
-								""
-							],
-							"query": [
-								{
-									"key": "login",
-									"value": "memi_22"
-								}
+								"users"
 							]
 						}
 					},
-					"response": []
+					"response": [
+						{
+							"name": "getUser",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Authorization",
+										"value": "Token token=\"e4016acfc52870626a63441066f55ed3\"",
+										"type": "text"
+									},
+									{
+										"key": "User-Token",
+										"value": "",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://favqs.com/api/users",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"users"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "214"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Sep 2025 05:42:12 GMT"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"046955beb6c58b9656a27cde11956adb\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "miss"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "c6c76aad-13ae-4e0a-9078-30fff987a3ee"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.025471"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"login\": \"37636\",\n    \"pic_url\": \"https://favqs.s3.amazonaws.com/avatar.png\",\n    \"public_favorites_count\": 0,\n    \"following\": 0,\n    \"followers\": 0,\n    \"pro\": null,\n    \"account_details\": {\n        \"email\": \"githwa@mailsac.com\",\n        \"private_favorites_count\": 0\n    }\n}"
+						}
+					]
 				},
 				{
 					"name": "UpdateUser",
@@ -139,23 +249,15 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"let jsonData = pm.response.json();\r",
-									"\r",
-									"\r",
-									"// Check if 'User-Token' exists inside 'user' object\r",
-									"if (jsonData.hasOwnProperty(\"message\")) {\r",
-									"   pm.test(\"Updated user successfully\", function () {\r",
-									"        pm.expect(jsonData.message).to.eql(\"User successfully updated.\");\r",
-									"    });\r",
-									"    \r",
-									"}else if (jsonData.error_code === 32) {\r",
-									"  pm.test(\"Message should contain 'login' and 'email' errors\", function () {\r",
-									"    pm.expect(jsonData.message).to.have.property(\"login\");\r",
-									"    pm.expect(jsonData.message).to.have.property(\"email\");\r",
+									"// Check status field\r",
+									"pm.test(\"validate message is diplayed\", function () {\r",
+									"    pm.expect(pm.response.json().message).to.eql(\"User successfully updated.\");\r",
 									"});\r",
 									"\r",
-									"\r",
-									"}\r",
+									"//validate status code.\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
 									"\r",
 									""
 								],
@@ -173,14 +275,19 @@
 								"type": "text"
 							},
 							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							},
+							{
 								"key": "User-Token",
-								"value": "",
+								"value": "{{usersession}}",
 								"type": "text"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{ \r\n  \"user\": {\r\n    \"facebook_username\": \"facebook_username_here\",\r\n    \"pic\": \"twitter\",\r\n    \"profanity_filter\": false\r\n  }\r\n}\r\n",
+							"raw": "{ \r\n  \"user\": {\r\n   \r\n    \"profanity_filter\": true\r\n  }\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -188,26 +295,306 @@
 							}
 						},
 						"url": {
-							"raw": "{{BaseUri}}/users/memi_22",
+							"raw": "{{uri}}/users/{{login}}",
 							"host": [
-								"{{BaseUri}}"
+								"{{uri}}"
 							],
 							"path": [
 								"users",
-								"memi_22"
+								"{{login}}"
 							]
 						}
 					},
-					"response": []
+					"response": [
+						{
+							"name": "InvalidUser",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Authorization",
+										"value": "Token token=\"e4016acfc52870626a63441066f55ed3\"",
+										"type": "text"
+									},
+									{
+										"key": "User-Token",
+										"value": "",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{ \r\n  \"user\": {\r\n   \r\n    \"pic\": \"gravater\",\r\n    \"profanity_filter\": true\r\n  }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://favqs.com/api/users/{{user}}",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"users",
+										"{{user}}"
+									]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "no-cache"
+								},
+								{
+									"key": "Content-Length",
+									"value": "47"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 12:04:34 GMT"
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "bypass"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "8d22cae1-2adb-49bf-96e4-f480593e904c"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.021251"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"error_code\": 30,\n    \"message\": \"User not found\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Forgot_Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Check status field\r",
+									"pm.test(\"validate message is diplayed\", function () {\r",
+									"    pm.expect(pm.response.json().message).to.eql(\"A reset link has been emailed.\");\r",
+									"});\r",
+									"\r",
+									"//validate status code.\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \r\n  \"user\": {\r\n    \"email\": \"{{email}}\"\r\n  }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{uri}}/users/forgot_password",
+							"host": [
+								"{{uri}}"
+							],
+							"path": [
+								"users",
+								"forgot_password"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "ResetPassword",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Authorization",
+										"value": "Token token=\"e4016acfc52870626a63441066f55ed3\"",
+										"type": "text"
+									},
+									{
+										"key": "User-Token",
+										"value": "",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{ \r\n  \"user\": {\r\n    \"email\": \"gathwa@mailsac.com\"\r\n  }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://favqs.com/api/users/forgot_password",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"users",
+										"forgot_password"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "45"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Sep 2025 05:40:48 GMT"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"7ddd9885a557c73fdb9e6d32fc171830\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "bypass"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "ed089d46-a616-4c5c-996a-d9e812271255"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.565568"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"message\": \"A reset link has been emailed.\"\n}"
+						}
+					]
 				}
-			],
-			"description": "User Management requests"
+			]
 		},
 		{
-			"name": "Quotes",
+			"name": "session",
 			"item": [
 				{
-					"name": "Get_Quote",
+					"name": "CreateSession",
 					"event": [
 						{
 							"listen": "test",
@@ -215,11 +602,285 @@
 								"exec": [
 									"let jsonData = pm.response.json();\r",
 									"\r",
-									"    pm.test(\"Quote displayed\", function () {\r",
-									"        pm.expect(jsonData.quote).to.have.property(\"id\");\r",
-									"    \r",
+									"// Extract token from response body\r",
+									"let token = jsonData[\"User-Token\"];\r",
 									"\r",
-									"    });"
+									"\r",
+									"// Save it in a collection variable\r",
+									"if (token) {\r",
+									"    pm.collectionVariables.set(\"usersession\", token);\r",
+									"\r",
+									"    console.log(\"Token saved in collection variable:\", token);\r",
+									"} else {\r",
+									"    console.log(\"No token found in response.\");\r",
+									"}\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \r\n  \"user\": {\r\n    \"login\": \"{{email}}\",\r\n    \"password\": \"{{password}}\"\r\n  }\r\n}"
+						},
+						"url": {
+							"raw": "{{uri}}/session",
+							"host": [
+								"{{uri}}"
+							],
+							"path": [
+								"session"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DestroySession",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"\r",
+									"// Check status field\r",
+									"pm.test(\"validate message is diplayed\", function () {\r",
+									"    pm.expect(pm.response.json().message).to.eql(\"User logged out.\");\r",
+									"});\r",
+									"\r",
+									"//validate status code.\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Token",
+								"value": "{{usersession}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{uri}}/session",
+							"host": [
+								"{{uri}}"
+							],
+							"path": [
+								"session"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "NoSessionFound",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Token token=\"e4016acfc52870626a63441066f55ed3\"",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "User-Token",
+										"value": "",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "https://favqs.com/api/session",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"session"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "55"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 10 Sep 2025 11:21:29 GMT"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"f711ed66b0cad5fbdcb1e5fa0e7dada1\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "bypass"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "697e7f0e-fd92-49d0-aa0f-bfe2b4006970"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.003040"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"error_code\": 20,\n    \"message\": \"No user session found.\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Quotes",
+			"item": [
+				{
+					"name": "GetQuote",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const schema = {\r",
+									"  \"type\": \"object\",\r",
+									"  \"properties\": {\r",
+									"    \"qotd_date\": { \"type\": \"string\" },\r",
+									"    \"quote\": {\r",
+									"      \"type\": \"object\",\r",
+									"      \"properties\": {\r",
+									"        \"id\": { \"type\": \"integer\" },\r",
+									"        \"favorites_count\": { \"type\": \"integer\" },\r",
+									"        \"dialogue\": { \"type\": \"boolean\" },\r",
+									"        \"favorite\": { \"type\": \"boolean\" },  // optional\r",
+									"        \"tags\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\r",
+									"        \"url\": { \"type\": \"string\" },\r",
+									"        \"upvotes_count\": { \"type\": \"integer\" },\r",
+									"        \"downvotes_count\": { \"type\": \"integer\" },\r",
+									"        \"author\": { \"type\": \"string\" },\r",
+									"        \"author_permalink\": { \"type\": \"string\" },\r",
+									"        \"body\": { \"type\": \"string\" }\r",
+									"      },\r",
+									"      \"required\": [\r",
+									"        \"id\", \"favorites_count\", \"dialogue\", \"tags\",\r",
+									"        \"url\", \"upvotes_count\", \"downvotes_count\",\r",
+									"        \"author\", \"author_permalink\", \"body\"\r",
+									"      ]\r",
+									"    }\r",
+									"  },\r",
+									"  \"required\": [\"qotd_date\", \"quote\"]\r",
+									"};\r",
+									"\r",
+									"pm.test(\"Response matches JSON Schema\", function () {\r",
+									"    pm.response.to.have.jsonSchema(schema);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									""
 								],
 								"type": "text/javascript",
 								"packages": {}
@@ -230,9 +891,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{BaseUri}}/qotd",
+							"raw": "{{uri}}/qotd",
 							"host": [
-								"{{BaseUri}}"
+								"{{uri}}"
 							],
 							"path": [
 								"qotd"
@@ -241,7 +902,7 @@
 					},
 					"response": [
 						{
-							"name": "quotes displayed",
+							"name": "GetQuote",
 							"originalRequest": {
 								"method": "GET",
 								"header": [],
@@ -260,7 +921,7 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "json",
+							"_postman_previewlanguage": null,
 							"header": [
 								{
 									"key": "Cache-Control",
@@ -268,15 +929,19 @@
 								},
 								{
 									"key": "Content-Length",
-									"value": "335"
+									"value": "266"
 								},
 								{
 									"key": "Content-Type",
 									"value": "application/json; charset=utf-8"
 								},
 								{
+									"key": "Date",
+									"value": "Mon, 15 Sep 2025 06:04:01 GMT"
+								},
+								{
 									"key": "Etag",
-									"value": "W/\"a0bdfc81efcb82e25a34af6f8ee9e260\""
+									"value": "W/\"6a6d114909870c544ea8d909a0a7d3cf\""
 								},
 								{
 									"key": "Referrer-Policy",
@@ -285,6 +950,14 @@
 								{
 									"key": "Strict-Transport-Security",
 									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "miss"
 								},
 								{
 									"key": "X-Content-Type-Options",
@@ -300,44 +973,43 @@
 								},
 								{
 									"key": "X-Request-Id",
-									"value": "e0fe97a4-854f-4ccf-a2bc-b1aae6c52ca4"
+									"value": "4c952d54-f541-47fb-a8f0-0a5a50ba21f4"
 								},
 								{
 									"key": "X-Runtime",
-									"value": "0.021966"
+									"value": "0.030164"
 								},
 								{
 									"key": "X-Xss-Protection",
 									"value": "0"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 24 Mar 2025 12:04:16 GMT"
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"qotd_date\": \"2025-03-25T00:00:00.000+00:00\",\n    \"quote\": {\n        \"id\": 63987,\n        \"dialogue\": false,\n        \"private\": false,\n        \"tags\": [],\n        \"url\": \"https://favqs.com/quotes/stephen-king/63987-get-busy-livi-\",\n        \"favorites_count\": 2,\n        \"upvotes_count\": 0,\n        \"downvotes_count\": 0,\n        \"author\": \"Stephen King\",\n        \"author_permalink\": \"stephen-king\",\n        \"body\": \"Get busy living or get busy dying\"\n    }\n}"
+							"body": "{\n    \"qotd_date\": \"2025-09-16T00:00:00.000+00:00\",\n    \"quote\": {\n        \"id\": 62136,\n        \"dialogue\": false,\n        \"private\": false,\n        \"tags\": [],\n        \"url\": \"https://favqs.com/quotes/me/62136-test\",\n        \"favorites_count\": 2,\n        \"upvotes_count\": 1,\n        \"downvotes_count\": 0,\n        \"author\": \"Me\",\n        \"author_permalink\": \"me\",\n        \"body\": \"Test\"\n    }\n}"
 						}
 					]
 				},
 				{
-					"name": "Get list of quotes",
+					"name": "Get_Quotes",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Parse the response as JSON\r",
 									"let jsonData = pm.response.json();\r",
 									"\r",
-									"//  Test: Check if 'quotes' exists and is an array\r",
-									"pm.test(\"'quotes' should be an array\", function () {\r",
-									"    pm.expect(jsonData).to.have.property(\"quotes\").that.is.an(\"array\");\r",
+									"pm.test(\"test author is present\",function(){\r",
+									"    pm.expect(jsonData.quotes.author).to.eql(\"Mark\")\r",
+									"\r",
+									"    \r",
 									"});\r",
 									"\r",
-									"// Test: Ensure 'quotes' array is not empty\r",
-									"pm.test(\"'quotes' array should have at least one quote\", function () {\r",
-									"    pm.expect(jsonData.quotes.length).to.be.greaterThan(0);\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Content-Type is present\", function () {\r",
+									"    pm.response.to.have.header(\"Content-Type\");\r",
 									"});\r",
 									"\r",
 									"\r",
@@ -351,37 +1023,297 @@
 					],
 					"request": {
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							}
+						],
 						"url": {
-							"raw": "{{QsUri}}",
+							"raw": "{{uri}}/quotes/?filter=Mark+Twain&type=autho",
 							"host": [
-								"{{QsUri}}"
+								"{{uri}}"
+							],
+							"path": [
+								"quotes",
+								""
+							],
+							"query": [
+								{
+									"key": "filter",
+									"value": "Mark+Twain"
+								},
+								{
+									"key": "type",
+									"value": "autho"
+								}
 							]
 						}
 					},
-					"response": []
+					"response": [
+						{
+							"name": "GetQuotes",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Authorization",
+										"value": "Token token=\"e4016acfc52870626a63441066f55ed3\"",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://favqs.com/api/quotes",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"quotes"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "gzip"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Sep 2025 06:13:53 GMT"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"cfdb8b99fe385bc7aad7451e412f41e4\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "miss"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "849960b5-ad7b-4aa8-a426-adac13def8b4"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.137529"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"page\": 1,\n    \"last_page\": false,\n    \"quotes\": [\n        {\n            \"id\": 36304,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"leadership\"\n            ],\n            \"url\": \"https://favqs.com/quotes/mwai-kibaki/36304-leadership-is-\",\n            \"favorites_count\": 2,\n            \"upvotes_count\": 0,\n            \"downvotes_count\": 0,\n            \"author\": \"Mwai Kibaki\",\n            \"author_permalink\": \"mwai-kibaki\",\n            \"body\": \"Leadership is a privilege to better the lives of others. It is not an opportunity to satisfy personal greed.\"\n        },\n        {\n            \"id\": 384,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"perfection\"\n            ],\n            \"url\": \"https://favqs.com/quotes/anonymous/384-good-better-bes-\",\n            \"favorites_count\": 3,\n            \"upvotes_count\": 0,\n            \"downvotes_count\": 0,\n            \"author\": \"Anonymous\",\n            \"author_permalink\": \"anonymous\",\n            \"body\": \"Good, better, best; never let it rest till your good is better and your better is best.\"\n        },\n        {\n            \"id\": 5936,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"beauty\"\n            ],\n            \"url\": \"https://favqs.com/quotes/paulo-coelho/5936-beauty-is-the--\",\n            \"favorites_count\": 3,\n            \"upvotes_count\": 0,\n            \"downvotes_count\": 0,\n            \"author\": \"Paulo Coelho\",\n            \"author_permalink\": \"paulo-coelho\",\n            \"body\": \"Beauty is the greatest seducer of man.\"\n        },\n        {\n            \"id\": 27319,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"good\",\n                \"men\",\n                \"religion\",\n                \"time\"\n            ],\n            \"url\": \"https://favqs.com/quotes/helen-keller/27319-it-is-wonderf-\",\n            \"favorites_count\": 0,\n            \"upvotes_count\": 2,\n            \"downvotes_count\": 0,\n            \"author\": \"Helen Keller\",\n            \"author_permalink\": \"helen-keller\",\n            \"body\": \"It is wonderful how much time good people spend fighting the devil. If they would only expend the same amount of energy loving their fellow men, the devil would die in his own tracks of ennui.\"\n        },\n        {\n            \"id\": 43808,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"moving-on\"\n            ],\n            \"url\": \"https://favqs.com/quotes/nelson-mandela/43808-forget-the-pa-\",\n            \"favorites_count\": 3,\n            \"upvotes_count\": 1,\n            \"downvotes_count\": 0,\n            \"author\": \"Nelson Mandela\",\n            \"author_permalink\": \"nelson-mandela\",\n            \"body\": \"Forget the past.\"\n        },\n        {\n            \"id\": 34121,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"imagination\"\n            ],\n            \"url\": \"https://favqs.com/quotes/william-shakespeare/34121-the-lunatic-t-\",\n            \"favorites_count\": 2,\n            \"upvotes_count\": 1,\n            \"downvotes_count\": 0,\n            \"author\": \"William Shakespeare\",\n            \"author_permalink\": \"william-shakespeare\",\n            \"body\": \"The lunatic, the lover, and the poet, are of imagination; all compact.\"\n        },\n        {\n            \"id\": 57493,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"travel\"\n            ],\n            \"url\": \"https://favqs.com/quotes/gilbert-k-chesterton/57493-the-traveler--\",\n            \"favorites_count\": 3,\n            \"upvotes_count\": 1,\n            \"downvotes_count\": 0,\n            \"author\": \"Gilbert K. Chesterton\",\n            \"author_permalink\": \"gilbert-k-chesterton\",\n            \"body\": \"The traveler sees what he sees, the tourist sees what he has come to see.\"\n        },\n        {\n            \"id\": 26653,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"god\",\n                \"religion\"\n            ],\n            \"url\": \"https://favqs.com/quotes/friedrich-nietzsche/26653-god-is-a-thou-\",\n            \"favorites_count\": 2,\n            \"upvotes_count\": 1,\n            \"downvotes_count\": 0,\n            \"author\": \"Friedrich Nietzsche\",\n            \"author_permalink\": \"friedrich-nietzsche\",\n            \"body\": \"God is a thought who makes crooked all that is straight.\"\n        },\n        {\n            \"id\": 61967,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [],\n            \"url\": \"https://favqs.com/quotes/humble/61967-winning-is-ha-\",\n            \"favorites_count\": 4,\n            \"upvotes_count\": 2,\n            \"downvotes_count\": 0,\n            \"author\": \"Humble\",\n            \"author_permalink\": \"humble\",\n            \"body\": \"Winning is half the battle.  Losing is the other half.\"\n        },\n        {\n            \"id\": 68064,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [],\n            \"url\": \"https://favqs.com/quotes/miss-nikole-stamm/68064-the-play-s-th-\",\n            \"favorites_count\": 2,\n            \"upvotes_count\": 0,\n            \"downvotes_count\": 0,\n            \"author\": \"Miss Nikole Stamm\",\n            \"author_permalink\": \"miss-nikole-stamm\",\n            \"body\": \"The play 's the thing wherein I'll catch the conscience of the king.\"\n        },\n        {\n            \"id\": 55528,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"sympathy\"\n            ],\n            \"url\": \"https://favqs.com/quotes/william-shakespeare/55528-when-sorrows--\",\n            \"favorites_count\": 2,\n            \"upvotes_count\": 2,\n            \"downvotes_count\": 0,\n            \"author\": \"William Shakespeare\",\n            \"author_permalink\": \"william-shakespeare\",\n            \"body\": \"When sorrows come, they come not single spies, but in battalions.\"\n        },\n        {\n            \"id\": 7284,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"best\",\n                \"courage\"\n            ],\n            \"url\": \"https://favqs.com/quotes/george-w-bush/7284-great-tragedy--\",\n            \"favorites_count\": 4,\n            \"upvotes_count\": 0,\n            \"downvotes_count\": 0,\n            \"author\": \"George W. Bush\",\n            \"author_permalink\": \"george-w-bush\",\n            \"body\": \"Great tragedy has come to us, and we are meeting it with the best that is in our country, with courage and concern for others because this is America. This is who we are.\"\n        },\n        {\n            \"id\": 40355,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"men\"\n            ],\n            \"url\": \"https://favqs.com/quotes/johann-wolfgang-von-goethe/40355-to-the-person-\",\n            \"favorites_count\": 0,\n            \"upvotes_count\": 2,\n            \"downvotes_count\": 0,\n            \"author\": \"Johann Wolfgang von Goethe\",\n            \"author_permalink\": \"johann-wolfgang-von-goethe\",\n            \"body\": \"To the person with a firm purpose all men and things are servants.\"\n        },\n        {\n            \"id\": 27312,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"good\",\n                \"love\"\n            ],\n            \"url\": \"https://favqs.com/quotes/confucius/27312-it-is-easy-to-\",\n            \"favorites_count\": 2,\n            \"upvotes_count\": 2,\n            \"downvotes_count\": 0,\n            \"author\": \"Confucius\",\n            \"author_permalink\": \"confucius\",\n            \"body\": \"It is easy to hate and it is difficult to love. This is how the whole scheme of things works. All good things are difficult to achieve and bad things are very easy to get.\"\n        },\n        {\n            \"id\": 34111,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"imagination\",\n                \"knowledge\"\n            ],\n            \"url\": \"https://favqs.com/quotes/albert-einstein/34111-imagination-i-\",\n            \"favorites_count\": 4,\n            \"upvotes_count\": 1,\n            \"downvotes_count\": 0,\n            \"author\": \"Albert Einstein\",\n            \"author_permalink\": \"albert-einstein\",\n            \"body\": \"Imagination is more important than knowledge.\"\n        },\n        {\n            \"id\": 38884,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"love\"\n            ],\n            \"url\": \"https://favqs.com/quotes/john-wooden/38884-passion-is-mo-\",\n            \"favorites_count\": 2,\n            \"upvotes_count\": 1,\n            \"downvotes_count\": 0,\n            \"author\": \"John Wooden\",\n            \"author_permalink\": \"john-wooden\",\n            \"body\": \"Passion is momentary love is enduring.\"\n        },\n        {\n            \"id\": 5033,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"art\",\n                \"communication\"\n            ],\n            \"url\": \"https://favqs.com/quotes/gustave-flaubert/5033-the-art-of-wri-\",\n            \"favorites_count\": 3,\n            \"upvotes_count\": 1,\n            \"downvotes_count\": 0,\n            \"author\": \"Gustave Flaubert\",\n            \"author_permalink\": \"gustave-flaubert\",\n            \"body\": \"The art of writing is the art of discovering what you believe.\"\n        },\n        {\n            \"id\": 828,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"age\",\n                \"religion\"\n            ],\n            \"url\": \"https://favqs.com/quotes/mahatma-gandhi/828-every-formula-o-\",\n            \"favorites_count\": 2,\n            \"upvotes_count\": 1,\n            \"downvotes_count\": 1,\n            \"author\": \"Mahatma Gandhi\",\n            \"author_permalink\": \"mahatma-gandhi\",\n            \"body\": \"Every formula of every religion has in this age of reason, to submit to the acid test of reason and universal assent.\"\n        },\n        {\n            \"id\": 18211,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"failure\"\n            ],\n            \"url\": \"https://favqs.com/quotes/thomas-a-edison/18211-show-me-a-tho-\",\n            \"favorites_count\": 2,\n            \"upvotes_count\": 1,\n            \"downvotes_count\": 0,\n            \"author\": \"Thomas A. Edison\",\n            \"author_permalink\": \"thomas-a-edison\",\n            \"body\": \"Show me a thoroughly satisfied man and I will show you a failure.\"\n        },\n        {\n            \"id\": 16003,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"education\"\n            ],\n            \"url\": \"https://favqs.com/quotes/marcus-aurelius/16003-natural-abili-\",\n            \"favorites_count\": 5,\n            \"upvotes_count\": 1,\n            \"downvotes_count\": 0,\n            \"author\": \"Marcus Aurelius\",\n            \"author_permalink\": \"marcus-aurelius\",\n            \"body\": \"Natural ability without education has more often raised a man to glory and virtue than education without natural ability.\"\n        },\n        {\n            \"id\": 272,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"imagination\",\n                \"ideas\",\n                \"american\",\n                \"deaf\",\n                \"blind\"\n            ],\n            \"url\": \"https://favqs.com/quotes/helen-keller/272-tyranny-cannot--\",\n            \"favorites_count\": 3,\n            \"upvotes_count\": 3,\n            \"downvotes_count\": 0,\n            \"author\": \"Helen Keller\",\n            \"author_permalink\": \"helen-keller\",\n            \"body\": \"Tyranny cannot defeat the power of ideas.\"\n        },\n        {\n            \"id\": 18964,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"faith\",\n                \"good\",\n                \"technology\"\n            ],\n            \"url\": \"https://favqs.com/quotes/steve-jobs/18964-technology-is-\",\n            \"favorites_count\": 4,\n            \"upvotes_count\": 1,\n            \"downvotes_count\": 0,\n            \"author\": \"Steve Jobs\",\n            \"author_permalink\": \"steve-jobs\",\n            \"body\": \"Technology is nothing. What's important is that you have a faith in people, that they're basically good and smart, and if you give them tools, they'll do wonderful things with them.\"\n        },\n        {\n            \"id\": 13616,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"death\"\n            ],\n            \"url\": \"https://favqs.com/quotes/albert-einstein/13616-intellectual--\",\n            \"favorites_count\": 2,\n            \"upvotes_count\": 1,\n            \"downvotes_count\": 0,\n            \"author\": \"Albert Einstein\",\n            \"author_permalink\": \"albert-einstein\",\n            \"body\": \"Intellectual growth should commence at birth and cease only at death.\"\n        },\n        {\n            \"id\": 62045,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [],\n            \"url\": \"https://favqs.com/quotes/abdu-l-baha/62045-aim-high-choo-\",\n            \"favorites_count\": 2,\n            \"upvotes_count\": 0,\n            \"downvotes_count\": 0,\n            \"author\": \"Abdu'l-Baha\",\n            \"author_permalink\": \"abdu-l-baha\",\n            \"body\": \"Aim high, choose noble ends...\"\n        },\n        {\n            \"id\": 28072,\n            \"dialogue\": false,\n            \"private\": false,\n            \"tags\": [\n                \"government\"\n            ],\n            \"url\": \"https://favqs.com/quotes/henry-ward-beecher/28072-the-worst-thi-\",\n            \"favorites_count\": 2,\n            \"upvotes_count\": 3,\n            \"downvotes_count\": 0,\n            \"author\": \"Henry Ward Beecher\",\n            \"author_permalink\": \"henry-ward-beecher\",\n            \"body\": \"The worst thing in this world, next to anarchy, is government.\"\n        }\n    ]\n}"
+						}
+					]
 				},
 				{
-					"name": "Fav Quote",
+					"name": "Get_QuoteID",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									" \r",
-									" let jsonData = pm.response.json();\r",
-									"\r",
-									"\r",
-									"if (! jsonData.error_code !== 20 ) {\r",
-									"     pm.test(\"Qoute added successfully\", function () {\r",
-									"        pm.expect(jsonData.id).to.eql(5);\r",
-									"    });\r",
-									"   \r",
-									"}else{\r",
-									"     pm.test(\"Status is error with message\", function () {\r",
-									"        pm.expect(jsonData.message).to.eql(\"No user session found.\");\r",
-									"    });\r",
-									"}"
+									"pm.test(\"test the id is diplayed\",function(){\r",
+									"    pm.expect(pm.response.json().id).to.equal(384)\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{uri}}/quotes/384",
+							"host": [
+								"{{uri}}"
+							],
+							"path": [
+								"quotes",
+								"384"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "QuotesID",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Token token=\"e4016acfc52870626a63441066f55ed3\"",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://favqs.com/api//quotes/384",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"",
+										"quotes",
+										"384"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "336"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Sep 2025 07:32:29 GMT"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"793aed91b6c8c80fc29499075b2cd957\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "miss"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "c44ae69c-cfe2-4e36-88e6-af5fbc09ace5"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.014858"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 384,\n    \"dialogue\": false,\n    \"private\": false,\n    \"tags\": [\n        \"perfection\"\n    ],\n    \"url\": \"https://favqs.com/quotes/anonymous/384-good-better-bes-\",\n    \"favorites_count\": 3,\n    \"upvotes_count\": 0,\n    \"downvotes_count\": 0,\n    \"author\": \"Anonymous\",\n    \"author_permalink\": \"anonymous\",\n    \"body\": \"Good, better, best; never let it rest till your good is better and your better is best.\"\n}"
+						}
+					]
+				},
+				{
+					"name": "FavQuote",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Validate favorite is true\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.user_details.favorite).to.eql(true);\r",
+									"});"
 								],
 								"type": "text/javascript",
 								"packages": {}
@@ -392,33 +1324,53 @@
 						"method": "PUT",
 						"header": [
 							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
 								"key": "User-Token",
-								"value": "",
+								"value": "{{usersession}}",
 								"type": "text"
 							}
 						],
 						"url": {
-							"raw": "{{QsUri}}/5/fav",
+							"raw": "{{uri}}/quotes/4/fav",
 							"host": [
-								"{{QsUri}}"
+								"{{uri}}"
 							],
 							"path": [
-								"5",
+								"quotes",
+								"4",
 								"fav"
 							]
 						}
 					},
 					"response": [
 						{
-							"name": "Error request",
+							"name": "AddFavQuote",
 							"originalRequest": {
 								"method": "PUT",
 								"header": [
 									{
+										"key": "Authorization",
+										"value": "Token token=\"e4016acfc52870626a63441066f55ed3\"",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
 										"key": "User-Token",
 										"value": "",
-										"type": "text",
-										"disabled": true
+										"type": "text"
 									}
 								],
 								"url": {
@@ -438,7 +1390,7 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "json",
+							"_postman_previewlanguage": null,
 							"header": [
 								{
 									"key": "Cache-Control",
@@ -446,15 +1398,19 @@
 								},
 								{
 									"key": "Content-Length",
-									"value": "55"
+									"value": "409"
 								},
 								{
 									"key": "Content-Type",
 									"value": "application/json; charset=utf-8"
 								},
 								{
+									"key": "Date",
+									"value": "Mon, 15 Sep 2025 07:41:55 GMT"
+								},
+								{
 									"key": "Etag",
-									"value": "W/\"f711ed66b0cad5fbdcb1e5fa0e7dada1\""
+									"value": "W/\"968f89c62a1605458135136bd135f986\""
 								},
 								{
 									"key": "Referrer-Policy",
@@ -463,6 +1419,14 @@
 								{
 									"key": "Strict-Transport-Security",
 									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "bypass"
 								},
 								{
 									"key": "X-Content-Type-Options",
@@ -478,128 +1442,71 @@
 								},
 								{
 									"key": "X-Request-Id",
-									"value": "9c3039d9-4093-431c-9f7c-2aa15ab46441"
+									"value": "a971d40a-0019-4120-8675-e2992ff3e6ef"
 								},
 								{
 									"key": "X-Runtime",
-									"value": "0.004973"
+									"value": "0.071231"
 								},
 								{
 									"key": "X-Xss-Protection",
 									"value": "0"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 24 Mar 2025 11:36:02 GMT"
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"error_code\": 20,\n    \"message\": \"No user session found.\"\n}"
-						},
-						{
-							"name": "Fav Quote",
-							"originalRequest": {
-								"method": "PUT",
-								"header": [
-									{
-										"key": "User-Token",
-										"value": "",
-										"type": "text"
-									}
-								],
-								"url": {
-									"raw": "{{QsUri}}/5/fav",
-									"host": [
-										"{{QsUri}}"
-									],
-									"path": [
-										"5",
-										"fav"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Cache-Control",
-									"value": "max-age=0, private, must-revalidate"
-								},
-								{
-									"key": "Content-Length",
-									"value": "398"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								},
-								{
-									"key": "Etag",
-									"value": "W/\"a7b730fad6e3c240ccc52cbf47645c39\""
-								},
-								{
-									"key": "Referrer-Policy",
-									"value": "strict-origin-when-cross-origin"
-								},
-								{
-									"key": "Strict-Transport-Security",
-									"value": "max-age=63072000; includeSubDomains"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "SAMEORIGIN"
-								},
-								{
-									"key": "X-Permitted-Cross-Domain-Policies",
-									"value": "none"
-								},
-								{
-									"key": "X-Request-Id",
-									"value": "aec615ff-c216-425d-9105-125946cb65bc"
-								},
-								{
-									"key": "X-Runtime",
-									"value": "0.028055"
-								},
-								{
-									"key": "X-Xss-Protection",
-									"value": "0"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 24 Mar 2025 11:49:51 GMT"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"id\": 5,\n    \"dialogue\": false,\n    \"private\": false,\n    \"tags\": [\n        \"opportunity\",\n        \"physicist\",\n        \"difficulty\"\n    ],\n    \"url\": \"https://favqs.com/quotes/anonymous/5-in-the-middle-of--\",\n    \"favorites_count\": 25,\n    \"upvotes_count\": 2,\n    \"downvotes_count\": 0,\n    \"author\": \"Anonymous\",\n    \"author_permalink\": \"anonymous\",\n    \"body\": \"In the middle of difficulty lies opportunity.\",\n    \"user_details\": {\n        \"favorite\": true,\n        \"upvote\": false,\n        \"downvote\": false,\n        \"hidden\": true\n    }\n}"
+							"body": "{\n    \"id\": 4,\n    \"dialogue\": false,\n    \"private\": false,\n    \"tags\": [\n        \"simplicity\",\n        \"minimalism\",\n        \"physicist\"\n    ],\n    \"url\": \"https://favqs.com/quotes/anonymous/4-make-everything-a-\",\n    \"favorites_count\": 44,\n    \"upvotes_count\": 10,\n    \"downvotes_count\": 2,\n    \"author\": \"Anonymous\",\n    \"author_permalink\": \"anonymous\",\n    \"body\": \"Make everything as simple as possible, but not simpler.\",\n    \"user_details\": {\n        \"favorite\": true,\n        \"upvote\": false,\n        \"downvote\": false,\n        \"hidden\": false\n    }\n}"
 						}
 					]
 				},
 				{
-					"name": "Hide quote",
+					"name": "Upvote",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"let jsonData = pm.response.json();\r",
+									"pm.test(\"Validate favorite is true\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.user_details.favorite).to.eql(true);\r",
+									"    pm.expect(jsonData.user_details.downvote).to.eql(false);\r",
 									"\r",
+									"});\r",
 									"\r",
-									"if ( jsonData.error_code !== 20 ) {\r",
-									"     pm.test(\"Qoute hidden successfully\", function () {\r",
-									"        pm.expect(jsonData.user_details.hidden).to.eql(true);\r",
-									"    });\r",
-									"   \r",
-									"}else{\r",
-									"     pm.test(\"Status is error with message\", function () {\r",
-									"        pm.expect(jsonData.message).to.eql(\"No user session found.\");\r",
-									"    });\r",
-									"}"
+									"const schema = {\r",
+									"    \"type\": \"object\",\r",
+									"    \"properties\": {\r",
+									"        \"id\": { \"type\": \"number\" },\r",
+									"        \"dialogue\": { \"type\": \"boolean\" },\r",
+									"        \"private\": { \"type\": \"boolean\" },\r",
+									"        \"tags\": {\r",
+									"            \"type\": \"array\",\r",
+									"            \"items\": { \"type\": \"string\" }\r",
+									"        },\r",
+									"        \"url\": { \"type\": \"string\" },\r",
+									"        \"favorites_count\": { \"type\": \"number\" },\r",
+									"        \"upvotes_count\": { \"type\": \"number\" },\r",
+									"        \"downvotes_count\": { \"type\": \"number\" },\r",
+									"        \"author\": { \"type\": \"string\" },\r",
+									"        \"author_permalink\": { \"type\": \"string\" },\r",
+									"        \"body\": { \"type\": \"string\" },\r",
+									"        \"user_details\": {\r",
+									"            \"type\": \"object\",\r",
+									"            \"properties\": {\r",
+									"                \"favorite\": { \"type\": \"boolean\", \"const\": true },  // ✅ must be true\r",
+									"                \"upvote\": { \"type\": \"boolean\" },\r",
+									"                \"downvote\": { \"type\": \"boolean\" },\r",
+									"                \"hidden\": { \"type\": \"boolean\" }\r",
+									"            },\r",
+									"            \"required\": [\"favorite\", \"upvote\", \"downvote\", \"hidden\"]\r",
+									"        }\r",
+									"    },\r",
+									"    \"required\": [\"id\", \"dialogue\", \"private\", \"tags\", \"url\", \"favorites_count\", \"upvotes_count\", \"downvotes_count\", \"author\", \"author_permalink\", \"body\", \"user_details\"]\r",
+									"};\r",
+									"\r",
+									"pm.test(\"Schema validation with favorite = true\", function () {\r",
+									"    pm.response.to.have.jsonSchema(schema);\r",
+									"});\r",
+									""
 								],
 								"type": "text/javascript",
 								"packages": {}
@@ -610,29 +1517,205 @@
 						"method": "PUT",
 						"header": [
 							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							},
+							{
 								"key": "User-Token",
-								"value": "",
-								"type": "text",
-								"disabled": true
+								"value": "{{usersession}}",
+								"type": "text"
 							}
 						],
 						"url": {
-							"raw": "{{QsUri}}/5/hide",
+							"raw": "{{uri}}/quotes/4/upvote",
 							"host": [
-								"{{QsUri}}"
+								"{{uri}}"
 							],
 							"path": [
-								"5",
+								"quotes",
+								"4",
+								"upvote"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "upvote Request",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Authorization",
+										"value": "Token token=\"e4016acfc52870626a63441066f55ed3\"",
+										"type": "text"
+									},
+									{
+										"key": "User-Token",
+										"value": "",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://favqs.com/api/quotes/4/upvote",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"quotes",
+										"4",
+										"upvote"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "408"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Sep 2025 08:07:58 GMT"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"fe596edadc62a122eb82e732b5653890\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "bypass"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "4a78467f-8a82-48cc-b1bf-d3cee102cdb2"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.064112"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 4,\n    \"dialogue\": false,\n    \"private\": false,\n    \"tags\": [\n        \"simplicity\",\n        \"minimalism\",\n        \"physicist\"\n    ],\n    \"url\": \"https://favqs.com/quotes/anonymous/4-make-everything-a-\",\n    \"favorites_count\": 44,\n    \"upvotes_count\": 11,\n    \"downvotes_count\": 2,\n    \"author\": \"Anonymous\",\n    \"author_permalink\": \"anonymous\",\n    \"body\": \"Make everything as simple as possible, but not simpler.\",\n    \"user_details\": {\n        \"favorite\": true,\n        \"upvote\": true,\n        \"downvote\": false,\n        \"hidden\": false\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "HideQuote",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Validate favorite is true\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.user_details.hidden).to.eql(true);\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Token",
+								"value": "{{usersession}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{uri}}/quotes/4/hide",
+							"host": [
+								"{{uri}}"
+							],
+							"path": [
+								"quotes",
+								"4",
 								"hide"
 							]
 						}
 					},
 					"response": [
 						{
-							"name": "Hide quote",
+							"name": "HideQuote",
 							"originalRequest": {
 								"method": "PUT",
 								"header": [
+									{
+										"key": "Authorization",
+										"value": "Token token=\"e4016acfc52870626a63441066f55ed3\"",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
 									{
 										"key": "User-Token",
 										"value": "",
@@ -640,7 +1723,7 @@
 									}
 								],
 								"url": {
-									"raw": "https://favqs.com/api/quotes/5/hide",
+									"raw": "https://favqs.com/api/quotes/4/hide",
 									"protocol": "https",
 									"host": [
 										"favqs",
@@ -649,14 +1732,14 @@
 									"path": [
 										"api",
 										"quotes",
-										"5",
+										"4",
 										"hide"
 									]
 								}
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "json",
+							"_postman_previewlanguage": null,
 							"header": [
 								{
 									"key": "Cache-Control",
@@ -664,15 +1747,19 @@
 								},
 								{
 									"key": "Content-Length",
-									"value": "398"
+									"value": "407"
 								},
 								{
 									"key": "Content-Type",
 									"value": "application/json; charset=utf-8"
 								},
 								{
+									"key": "Date",
+									"value": "Mon, 15 Sep 2025 08:14:28 GMT"
+								},
+								{
 									"key": "Etag",
-									"value": "W/\"a7b730fad6e3c240ccc52cbf47645c39\""
+									"value": "W/\"18b0401c6b2fc67b5aa812679267783f\""
 								},
 								{
 									"key": "Referrer-Policy",
@@ -681,6 +1768,14 @@
 								{
 									"key": "Strict-Transport-Security",
 									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "bypass"
 								},
 								{
 									"key": "X-Content-Type-Options",
@@ -696,111 +1791,24 @@
 								},
 								{
 									"key": "X-Request-Id",
-									"value": "54d50b94-f44d-4974-a523-5e59738343bf"
+									"value": "53291774-f6ff-4eba-aecc-0dd023702e01"
 								},
 								{
 									"key": "X-Runtime",
-									"value": "0.041826"
+									"value": "0.052999"
 								},
 								{
 									"key": "X-Xss-Protection",
 									"value": "0"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 24 Mar 2025 11:50:11 GMT"
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"id\": 5,\n    \"dialogue\": false,\n    \"private\": false,\n    \"tags\": [\n        \"opportunity\",\n        \"physicist\",\n        \"difficulty\"\n    ],\n    \"url\": \"https://favqs.com/quotes/anonymous/5-in-the-middle-of--\",\n    \"favorites_count\": 25,\n    \"upvotes_count\": 2,\n    \"downvotes_count\": 0,\n    \"author\": \"Anonymous\",\n    \"author_permalink\": \"anonymous\",\n    \"body\": \"In the middle of difficulty lies opportunity.\",\n    \"user_details\": {\n        \"favorite\": true,\n        \"upvote\": false,\n        \"downvote\": false,\n        \"hidden\": true\n    }\n}"
-						},
-						{
-							"name": "Hide quote error",
-							"originalRequest": {
-								"method": "PUT",
-								"header": [
-									{
-										"key": "User-Token",
-										"value": "",
-										"type": "text",
-										"disabled": true
-									}
-								],
-								"url": {
-									"raw": "{{QsUri}}/5/hide",
-									"host": [
-										"{{QsUri}}"
-									],
-									"path": [
-										"5",
-										"hide"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Cache-Control",
-									"value": "max-age=0, private, must-revalidate"
-								},
-								{
-									"key": "Content-Length",
-									"value": "55"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								},
-								{
-									"key": "Etag",
-									"value": "W/\"f711ed66b0cad5fbdcb1e5fa0e7dada1\""
-								},
-								{
-									"key": "Referrer-Policy",
-									"value": "strict-origin-when-cross-origin"
-								},
-								{
-									"key": "Strict-Transport-Security",
-									"value": "max-age=63072000; includeSubDomains"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "SAMEORIGIN"
-								},
-								{
-									"key": "X-Permitted-Cross-Domain-Policies",
-									"value": "none"
-								},
-								{
-									"key": "X-Request-Id",
-									"value": "cc1120c0-3d90-4d29-934b-069e53dbcc0c"
-								},
-								{
-									"key": "X-Runtime",
-									"value": "0.005108"
-								},
-								{
-									"key": "X-Xss-Protection",
-									"value": "0"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 24 Mar 2025 11:51:35 GMT"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"error_code\": 20,\n    \"message\": \"No user session found.\"\n}"
+							"body": "{\n    \"id\": 4,\n    \"dialogue\": false,\n    \"private\": false,\n    \"tags\": [\n        \"simplicity\",\n        \"minimalism\",\n        \"physicist\"\n    ],\n    \"url\": \"https://favqs.com/quotes/anonymous/4-make-everything-a-\",\n    \"favorites_count\": 44,\n    \"upvotes_count\": 11,\n    \"downvotes_count\": 2,\n    \"author\": \"Anonymous\",\n    \"author_permalink\": \"anonymous\",\n    \"body\": \"Make everything as simple as possible, but not simpler.\",\n    \"user_details\": {\n        \"favorite\": true,\n        \"upvote\": true,\n        \"downvote\": false,\n        \"hidden\": true\n    }\n}"
 						}
 					]
 				},
 				{
-					"name": "Unhide Quote",
+					"name": "AddQuote",
 					"event": [
 						{
 							"listen": "test",
@@ -808,17 +1816,29 @@
 								"exec": [
 									"let jsonData = pm.response.json();\r",
 									"\r",
+									"// Extract token from response body\r",
+									"let id = jsonData.id;\r",
+									"// Save it in a collection variable\r",
+									"if (id) {\r",
+									"    pm.collectionVariables.set(\"idQuote\", id);\r",
 									"\r",
-									"if ( jsonData.error_code !== 20 ) {\r",
-									"     pm.test(\"Qoute unhidden successfully\", function () {\r",
-									"        pm.expect(jsonData.user_details.hidden).to.eql(false);\r",
-									"    });\r",
-									"   \r",
-									"}else{\r",
-									"     pm.test(\"Status is error with message\", function () {\r",
-									"        pm.expect(jsonData.message).to.eql(\"No user session found.\");\r",
-									"    });\r",
-									"}"
+									"    console.log(\"Quote Id saved in collection variable:\", token);\r",
+									"} else {\r",
+									"    console.log(\"No id  found in response.\"); \r",
+									"}\r",
+									"\r",
+									"// Status code check\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Validate favorite is true\", function () {\r",
+									"\r",
+									"    pm.expect(jsonData.body).to.eql(\"All our dreams can come true, if we have the courage to pursue them.\");\r",
+									"\r",
+									"});\r",
+									"\r",
+									""
 								],
 								"type": "text/javascript",
 								"packages": {}
@@ -826,211 +1846,27 @@
 						}
 					],
 					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "User-Token",
-								"value": "",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{QsUri}}/5/unhide",
-							"host": [
-								"{{QsUri}}"
-							],
-							"path": [
-								"5",
-								"unhide"
-							]
-						}
-					},
-					"response": [
-						{
-							"name": "Unhide quote success",
-							"originalRequest": {
-								"method": "PUT",
-								"header": [
-									{
-										"key": "User-Token",
-										"value": "",
-										"type": "text"
-									}
-								],
-								"url": {
-									"raw": "https://favqs.com/api/quotes/5/unhide",
-									"protocol": "https",
-									"host": [
-										"favqs",
-										"com"
-									],
-									"path": [
-										"api",
-										"quotes",
-										"5",
-										"unhide"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Cache-Control",
-									"value": "max-age=0, private, must-revalidate"
-								},
-								{
-									"key": "Content-Length",
-									"value": "399"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								},
-								{
-									"key": "Etag",
-									"value": "W/\"06b3b642e9e3c6af90884527b3d71ec5\""
-								},
-								{
-									"key": "Referrer-Policy",
-									"value": "strict-origin-when-cross-origin"
-								},
-								{
-									"key": "Strict-Transport-Security",
-									"value": "max-age=63072000; includeSubDomains"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "SAMEORIGIN"
-								},
-								{
-									"key": "X-Permitted-Cross-Domain-Policies",
-									"value": "none"
-								},
-								{
-									"key": "X-Request-Id",
-									"value": "029e148d-d103-40b9-b75c-f1ee2d05a347"
-								},
-								{
-									"key": "X-Runtime",
-									"value": "0.033090"
-								},
-								{
-									"key": "X-Xss-Protection",
-									"value": "0"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 24 Mar 2025 11:58:48 GMT"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"id\": 5,\n    \"dialogue\": false,\n    \"private\": false,\n    \"tags\": [\n        \"opportunity\",\n        \"physicist\",\n        \"difficulty\"\n    ],\n    \"url\": \"https://favqs.com/quotes/anonymous/5-in-the-middle-of--\",\n    \"favorites_count\": 25,\n    \"upvotes_count\": 2,\n    \"downvotes_count\": 0,\n    \"author\": \"Anonymous\",\n    \"author_permalink\": \"anonymous\",\n    \"body\": \"In the middle of difficulty lies opportunity.\",\n    \"user_details\": {\n        \"favorite\": true,\n        \"upvote\": false,\n        \"downvote\": false,\n        \"hidden\": false\n    }\n}"
-						},
-						{
-							"name": "Unhide quote error",
-							"originalRequest": {
-								"method": "PUT",
-								"header": [
-									{
-										"key": "User-Token",
-										"value": "",
-										"type": "text",
-										"disabled": true
-									}
-								],
-								"url": {
-									"raw": "{{QsUri}}/5/unhide",
-									"host": [
-										"{{QsUri}}"
-									],
-									"path": [
-										"5",
-										"unhide"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Cache-Control",
-									"value": "max-age=0, private, must-revalidate"
-								},
-								{
-									"key": "Content-Length",
-									"value": "55"
-								},
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								},
-								{
-									"key": "Etag",
-									"value": "W/\"f711ed66b0cad5fbdcb1e5fa0e7dada1\""
-								},
-								{
-									"key": "Referrer-Policy",
-									"value": "strict-origin-when-cross-origin"
-								},
-								{
-									"key": "Strict-Transport-Security",
-									"value": "max-age=63072000; includeSubDomains"
-								},
-								{
-									"key": "X-Content-Type-Options",
-									"value": "nosniff"
-								},
-								{
-									"key": "X-Frame-Options",
-									"value": "SAMEORIGIN"
-								},
-								{
-									"key": "X-Permitted-Cross-Domain-Policies",
-									"value": "none"
-								},
-								{
-									"key": "X-Request-Id",
-									"value": "6ca8e36a-ccc8-4e21-badb-889210563970"
-								},
-								{
-									"key": "X-Runtime",
-									"value": "0.004922"
-								},
-								{
-									"key": "X-Xss-Protection",
-									"value": "0"
-								},
-								{
-									"key": "Date",
-									"value": "Mon, 24 Mar 2025 11:59:56 GMT"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"error_code\": 20,\n    \"message\": \"No user session found.\"\n}"
-						}
-					]
-				},
-				{
-					"name": "Add quote",
-					"request": {
 						"method": "POST",
 						"header": [
 							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
 								"key": "User-Token",
-								"value": "",
+								"value": "{{usersession}}",
 								"type": "text"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"quote\": {\r\n    \"author\": \"Mark Twain\",\r\n    \"body\": \"Never let your schooling interfere with your education.\"\r\n  }\r\n}",
+							"raw": "{\r\n  \"quote\": {\r\n    \"author\": \"Walt Disney\",\r\n    \"body\": \"All our dreams can come true, if we have the courage to pursue them.\"\r\n  }\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1038,28 +1874,559 @@
 							}
 						},
 						"url": {
-							"raw": "{{QsUri}}",
+							"raw": "{{uri}}/quotes",
 							"host": [
-								"{{QsUri}}"
+								"{{uri}}"
+							],
+							"path": [
+								"quotes"
 							]
 						}
 					},
-					"response": []
+					"response": [
+						{
+							"name": "AddQuote",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Token token=\"e4016acfc52870626a63441066f55ed3\"",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "User-Token",
+										"value": "",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"quote\": {\r\n    \"author\": \"Walt Disney\",\r\n    \"body\": \"All our dreams can come true, if we have the courage to pursue them.\"\r\n  }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://favqs.com/api/quotes",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"quotes"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Length",
+									"value": "393"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Sep 2025 08:27:02 GMT"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"8fd1313272360c5455b9fcc35e9ef6d5\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "bypass"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "ead8fa4e-0f75-45ae-b638-a9fd82c5cfa2"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.063141"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 68235,\n    \"dialogue\": false,\n    \"private\": false,\n    \"tags\": [],\n    \"url\": \"https://favqs.com/quotes/walt-disney/68235-all-our-dream-\",\n    \"favorites_count\": 1,\n    \"upvotes_count\": 0,\n    \"downvotes_count\": 0,\n    \"author\": \"Walt Disney\",\n    \"author_permalink\": \"walt-disney\",\n    \"body\": \"All our dreams can come true, if we have the courage to pursue them.\",\n    \"user_details\": {\n        \"favorite\": true,\n        \"upvote\": false,\n        \"downvote\": false,\n        \"hidden\": false\n    }\n}"
+						}
+					]
 				}
-			],
-			"description": "Quotes Management"
+			]
+		},
+		{
+			"name": "Activities",
+			"item": [
+				{
+					"name": "getActivities",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"pm.test(\"Activities array has items\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.activities.length).to.be.above(0);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Token",
+								"value": "{{usersession}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{uri}}/activities",
+							"host": [
+								"{{uri}}"
+							],
+							"path": [
+								"activities"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Activities",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Token token=\"e4016acfc52870626a63441066f55ed3\"",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "User-Token",
+										"value": "",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://favqs.com/api/activities",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"activities"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "gzip"
+								},
+								{
+									"key": "Content-Length",
+									"value": "420"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Sep 2025 08:39:04 GMT"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"74f86ee02043bc600b1895aac5fab35d\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "miss"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "b0aa3b93-59d8-4fa9-8817-f90d5b2ea6da"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.043650"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"page\": 1,\n    \"last_page\": true,\n    \"activities\": [\n        {\n            \"activity_id\": 29137,\n            \"owner_type\": \"User\",\n            \"owner_id\": \"37636\",\n            \"owner_value\": \"37636\",\n            \"action\": \"favorited\",\n            \"trackable_id\": 68235,\n            \"trackable_type\": \"Quote\",\n            \"trackable_value\": \"\\\"All our dreams can come true, if we have the courage to pursue them.\\\" - Walt Disney\",\n            \"message\": \"User 37636 favorited Quote \\\"All our dreams can come true, if we have the courage to pursue them.\\\" - Walt Disney\"\n        },\n        {\n            \"activity_id\": 29135,\n            \"owner_type\": \"User\",\n            \"owner_id\": \"37636\",\n            \"owner_value\": \"37636\",\n            \"action\": \"favorited\",\n            \"trackable_id\": 68234,\n            \"trackable_type\": \"Quote\",\n            \"trackable_value\": \"\\\"It is impossible to begin to learn that which one thinks one already knows.\\\" - Epictetus\",\n            \"message\": \"User 37636 favorited Quote \\\"It is impossible to begin to learn that which one thinks one already knows.\\\" - Epictetus\"\n        },\n        {\n            \"activity_id\": 29134,\n            \"owner_type\": \"User\",\n            \"owner_id\": \"37636\",\n            \"owner_value\": \"37636\",\n            \"action\": \"favorited\",\n            \"trackable_id\": 4,\n            \"trackable_type\": \"Quote\",\n            \"trackable_value\": \"\\\"Make everything as simple as possible, but not simpler.\\\"\",\n            \"message\": \"User 37636 favorited Quote \\\"Make everything as simple as possible, but not simpler.\\\"\"\n        },\n        {\n            \"activity_id\": 29133,\n            \"owner_type\": \"User\",\n            \"owner_id\": \"37636\",\n            \"owner_value\": \"37636\",\n            \"action\": \"favorited\",\n            \"trackable_id\": 384,\n            \"trackable_type\": \"Quote\",\n            \"trackable_value\": \"\\\"Good, better, best; never let it rest till your good is better and your better is best.\\\"\",\n            \"message\": \"User 37636 favorited Quote \\\"Good, better, best; never let it rest till your good is better and your better is best.\\\"\"\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "getFollowers",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{mainToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Token",
+								"value": "{{usersession}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{uri}}/activities",
+							"host": [
+								"{{uri}}"
+							],
+							"path": [
+								"activities"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Activities",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Token token=\"e4016acfc52870626a63441066f55ed3\"",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "User-Token",
+										"value": "",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://favqs.com/api/activities",
+									"protocol": "https",
+									"host": [
+										"favqs",
+										"com"
+									],
+									"path": [
+										"api",
+										"activities"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "gzip"
+								},
+								{
+									"key": "Content-Length",
+									"value": "420"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Sep 2025 08:39:04 GMT"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"74f86ee02043bc600b1895aac5fab35d\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "miss"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "b0aa3b93-59d8-4fa9-8817-f90d5b2ea6da"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.043650"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"page\": 1,\n    \"last_page\": true,\n    \"activities\": [\n        {\n            \"activity_id\": 29137,\n            \"owner_type\": \"User\",\n            \"owner_id\": \"37636\",\n            \"owner_value\": \"37636\",\n            \"action\": \"favorited\",\n            \"trackable_id\": 68235,\n            \"trackable_type\": \"Quote\",\n            \"trackable_value\": \"\\\"All our dreams can come true, if we have the courage to pursue them.\\\" - Walt Disney\",\n            \"message\": \"User 37636 favorited Quote \\\"All our dreams can come true, if we have the courage to pursue them.\\\" - Walt Disney\"\n        },\n        {\n            \"activity_id\": 29135,\n            \"owner_type\": \"User\",\n            \"owner_id\": \"37636\",\n            \"owner_value\": \"37636\",\n            \"action\": \"favorited\",\n            \"trackable_id\": 68234,\n            \"trackable_type\": \"Quote\",\n            \"trackable_value\": \"\\\"It is impossible to begin to learn that which one thinks one already knows.\\\" - Epictetus\",\n            \"message\": \"User 37636 favorited Quote \\\"It is impossible to begin to learn that which one thinks one already knows.\\\" - Epictetus\"\n        },\n        {\n            \"activity_id\": 29134,\n            \"owner_type\": \"User\",\n            \"owner_id\": \"37636\",\n            \"owner_value\": \"37636\",\n            \"action\": \"favorited\",\n            \"trackable_id\": 4,\n            \"trackable_type\": \"Quote\",\n            \"trackable_value\": \"\\\"Make everything as simple as possible, but not simpler.\\\"\",\n            \"message\": \"User 37636 favorited Quote \\\"Make everything as simple as possible, but not simpler.\\\"\"\n        },\n        {\n            \"activity_id\": 29133,\n            \"owner_type\": \"User\",\n            \"owner_id\": \"37636\",\n            \"owner_value\": \"37636\",\n            \"action\": \"favorited\",\n            \"trackable_id\": 384,\n            \"trackable_type\": \"Quote\",\n            \"trackable_value\": \"\\\"Good, better, best; never let it rest till your good is better and your better is best.\\\"\",\n            \"message\": \"User 37636 favorited Quote \\\"Good, better, best; never let it rest till your good is better and your better is best.\\\"\"\n        }\n    ]\n}"
+						},
+						{
+							"name": "getActivities Copy",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{mainToken}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "User-Token",
+										"value": "{{usersession}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{uri}}/activities",
+									"host": [
+										"{{uri}}"
+									],
+									"path": [
+										"activities"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Cache-Control",
+									"value": "max-age=0, private, must-revalidate"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "gzip"
+								},
+								{
+									"key": "Content-Length",
+									"value": "420"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 15 Sep 2025 09:13:59 GMT"
+								},
+								{
+									"key": "Etag",
+									"value": "W/\"74f86ee02043bc600b1895aac5fab35d\""
+								},
+								{
+									"key": "Referrer-Policy",
+									"value": "strict-origin-when-cross-origin"
+								},
+								{
+									"key": "Strict-Transport-Security",
+									"value": "max-age=63072000; includeSubDomains"
+								},
+								{
+									"key": "Vary",
+									"value": "Accept-Encoding"
+								},
+								{
+									"key": "X-Cache",
+									"value": "miss"
+								},
+								{
+									"key": "X-Content-Type-Options",
+									"value": "nosniff"
+								},
+								{
+									"key": "X-Frame-Options",
+									"value": "SAMEORIGIN"
+								},
+								{
+									"key": "X-Permitted-Cross-Domain-Policies",
+									"value": "none"
+								},
+								{
+									"key": "X-Request-Id",
+									"value": "fa30329e-6807-4d6c-bf5d-58d89818823b"
+								},
+								{
+									"key": "X-Runtime",
+									"value": "0.052187"
+								},
+								{
+									"key": "X-Xss-Protection",
+									"value": "0"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"page\": 1,\n    \"last_page\": true,\n    \"activities\": [\n        {\n            \"activity_id\": 29137,\n            \"owner_type\": \"User\",\n            \"owner_id\": \"37636\",\n            \"owner_value\": \"37636\",\n            \"action\": \"favorited\",\n            \"trackable_id\": 68235,\n            \"trackable_type\": \"Quote\",\n            \"trackable_value\": \"\\\"All our dreams can come true, if we have the courage to pursue them.\\\" - Walt Disney\",\n            \"message\": \"User 37636 favorited Quote \\\"All our dreams can come true, if we have the courage to pursue them.\\\" - Walt Disney\"\n        },\n        {\n            \"activity_id\": 29135,\n            \"owner_type\": \"User\",\n            \"owner_id\": \"37636\",\n            \"owner_value\": \"37636\",\n            \"action\": \"favorited\",\n            \"trackable_id\": 68234,\n            \"trackable_type\": \"Quote\",\n            \"trackable_value\": \"\\\"It is impossible to begin to learn that which one thinks one already knows.\\\" - Epictetus\",\n            \"message\": \"User 37636 favorited Quote \\\"It is impossible to begin to learn that which one thinks one already knows.\\\" - Epictetus\"\n        },\n        {\n            \"activity_id\": 29134,\n            \"owner_type\": \"User\",\n            \"owner_id\": \"37636\",\n            \"owner_value\": \"37636\",\n            \"action\": \"favorited\",\n            \"trackable_id\": 4,\n            \"trackable_type\": \"Quote\",\n            \"trackable_value\": \"\\\"Make everything as simple as possible, but not simpler.\\\"\",\n            \"message\": \"User 37636 favorited Quote \\\"Make everything as simple as possible, but not simpler.\\\"\"\n        },\n        {\n            \"activity_id\": 29133,\n            \"owner_type\": \"User\",\n            \"owner_id\": \"37636\",\n            \"owner_value\": \"37636\",\n            \"action\": \"favorited\",\n            \"trackable_id\": 384,\n            \"trackable_type\": \"Quote\",\n            \"trackable_value\": \"\\\"Good, better, best; never let it rest till your good is better and your better is best.\\\"\",\n            \"message\": \"User 37636 favorited Quote \\\"Good, better, best; never let it rest till your good is better and your better is best.\\\"\"\n        }\n    ]\n}"
+						}
+					]
+				}
+			]
 		}
 	],
-	"auth": {
-		"type": "bearer",
-		"bearer": [
-			{
-				"key": "token",
-				"value": "",
-				"type": "string"
-			}
-		]
-	},
 	"event": [
 		{
 			"listen": "prerequest",
@@ -1080,6 +2447,36 @@
 					""
 				]
 			}
+		}
+	],
+	"variable": [
+		{
+			"key": "login",
+			"value": "Rati_22"
+		},
+		{
+			"key": "email",
+			"value": "gathwa@mailsac.com"
+		},
+		{
+			"key": "password",
+			"value": "admin@123"
+		},
+		{
+			"key": "uri",
+			"value": "https://favqs.com/api"
+		},
+		{
+			"key": "mainToken",
+			"value": "Token token=\"e4016acfc52870626a63441066f55ed3\""
+		},
+		{
+			"key": "usersession",
+			"value": ""
+		},
+		{
+			"key": "logins",
+			"value": "37636"
 		}
 	]
 }
