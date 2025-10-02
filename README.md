@@ -1,8 +1,10 @@
 📚 FavQs API Testing with Postman
 
 This project contains automated tests for the FavQs API using Postman and Newman. The collection covers major API functionalities including User Management, Session Handling, Quotes, and Activities.
+Check the document here: https://documenter.getpostman.com/view/42490060/2sAYkHpykV
 
 🚀 Features Covered
+
 🔑 User & Session
 
 - Create new users
